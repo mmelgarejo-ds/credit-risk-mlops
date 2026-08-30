@@ -1,0 +1,22 @@
+# Entorno virtual
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Modelos y artefactos
+*.pkl
+*.joblib
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
