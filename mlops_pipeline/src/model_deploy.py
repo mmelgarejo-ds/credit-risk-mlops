@@ -55,7 +55,9 @@ class Solicitud(BaseModel):
     creditos_sectorFinanciero: int = Field(..., ge=0, examples=[2])
     creditos_sectorCooperativo: int = Field(..., ge=0, examples=[0])
     creditos_sectorReal: int = Field(..., ge=0, examples=[1])
-    promedio_ingresos_datacredito: float = Field(..., ge=0, examples=[1_200_000])
+    # Opcional: su ausencia es informativa. Omitirlo equivale al dato faltante
+    # que ft_engineering marca con isna(), no a un valor de cero.
+    promedio_ingresos_datacredito: float | None = Field(None, ge=0, examples=[1_200_000])
     tendencia_ingresos: str = Field(..., examples=["Creciente"])
     mes_prestamo: int = Field(6, ge=1, le=12)
     trimestre_prestamo: int = Field(2, ge=1, le=4)
@@ -104,7 +106,13 @@ def predecir(solicitud: Solicitud):
 
     # Los atributos derivados se calculan con las mismas fórmulas que
     # ft_engineering.crear_atributos()
-    datos["sin_datos_datacredito"] = int(datos["promedio_ingresos_datacredito"] == 0)
+    # Mismo criterio que ft_engineering.crear_atributos(): la marca señala
+    # ausencia del dato, no un valor de cero.
+    sin_dc = datos["promedio_ingresos_datacredito"] is None
+    datos["sin_datos_datacredito"] = int(sin_dc)
+    if sin_dc:
+        # El pipeline imputa el faltante con la mediana del entrenamiento.
+        datos["promedio_ingresos_datacredito"] = float("nan")
     datos["sin_otros_prestamos"] = int(datos["total_otros_prestamos"] == 0)
     datos["sin_saldo"] = int(datos["saldo_total"] == 0)
     datos["ratio_cuota_salario"] = datos["cuota_pactada"] / datos["salario_cliente"]

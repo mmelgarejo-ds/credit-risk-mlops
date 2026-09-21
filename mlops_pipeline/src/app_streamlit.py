@@ -87,8 +87,10 @@ with tab_pred:
         c1, c2, c3 = st.columns(3)
         saldo_total = c1.number_input("Saldo total", 0, 5_000_000, 16_000)
         saldo_principal = c2.number_input("Saldo principal", 0, 2_000_000, 14_000)
+        sin_dc = c3.checkbox("Sin datos de Datacrédito")
         ingresos_dc = c3.number_input("Ingresos reportados (Datacrédito)",
-                                      0, 40_000_000, 1_200_000, step=100_000)
+                                      0, 40_000_000, 1_200_000,
+                                      step=100_000, disabled=sin_dc)
         c4, c5, c6 = st.columns(3)
         sec_financiero = c4.number_input("Créditos sector financiero", 0, 51, 2)
         sec_cooperativo = c5.number_input("Créditos sector cooperativo", 0, 13, 0)
@@ -116,10 +118,12 @@ with tab_pred:
             "creditos_sectorFinanciero": sec_financiero,
             "creditos_sectorCooperativo": sec_cooperativo,
             "creditos_sectorReal": sec_real,
-            "promedio_ingresos_datacredito": float(ingresos_dc),
+            "promedio_ingresos_datacredito": (np.nan if sin_dc
+                                              else float(ingresos_dc)),
             "tendencia_ingresos": tendencia,
             # Atributos derivados, calculados igual que en ft_engineering
-            "sin_datos_datacredito": 0,
+            # Mismo criterio que ft_engineering: marca la ausencia del dato
+            "sin_datos_datacredito": int(sin_dc),
             "sin_otros_prestamos": int(otros_prestamos == 0),
             "sin_saldo": int(saldo_total == 0),
             "ratio_cuota_salario": cuota / salario,
