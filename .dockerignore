@@ -1,0 +1,21 @@
+# Entorno virtual: el contenedor instala sus propias dependencias
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Git y configuración de editores
+.git/
+.gitignore
+.vscode/
+.claude/
+
+# Notebooks y datos no necesarios en tiempo de ejecución
+*.ipynb
+.ipynb_checkpoints/
+Base_de_datos.xlsx
+
+# Documentación
+README.md
