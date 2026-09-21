@@ -51,16 +51,23 @@ def calcular_metricas(y_real, y_pred, y_proba):
         "roc_auc": roc_auc_score(y_real, 1 - y_proba)
     }
 
-def construir_modelos():
+def construir_modelos(y_entrenamiento=None):
     """Devuelve los clasificadores candidatos.
 
     El parámetro de balanceo es clave: sin él, los tres modelos tienden a
     predecir siempre la clase mayoritaria, dado que el impago representa
     solo el 4,75% de los registros.
+
+    La razón entre clases se calcula sobre los datos recibidos en lugar de
+    fijarse como constante, de modo que siga siendo válida si el dataset
+    cambia.
     """
     # scale_pos_weight de XGBoost espera la razón entre clases.
-    # Con 10.252 pagos y 511 impagos, la razón es ~20.
-    razon_clases = 10252 / 511
+    if y_entrenamiento is not None:
+        razon_clases = ((y_entrenamiento == 1).sum()
+                        / max((y_entrenamiento == 0).sum(), 1))
+    else:
+        razon_clases = 20.0
 
     return {
         "LogisticRegression": LogisticRegression(
@@ -92,7 +99,7 @@ def entrenar_y_evaluar(X_train, X_test, y_train, y_test):
     resultados = []
     pipelines = {}
 
-    for nombre, modelo in construir_modelos().items():
+    for nombre, modelo in construir_modelos(y_train).items():
         print(f"Entrenando {nombre}...")
 
         pipe = Pipeline([
@@ -164,7 +171,7 @@ def validar_modelos(X, y, n_folds=5):
     }
 
     filas = []
-    for nombre, modelo in construir_modelos().items():
+    for nombre, modelo in construir_modelos(y).items():
         print(f"Validando {nombre}...")
         pipe = Pipeline([
             ("preprocesador", construir_preprocesador()),
@@ -256,11 +263,11 @@ if __name__ == "__main__":
     print(tabla)
 
     # --- Selección ---
-    # El RandomForest ajustado alcanza mejor F1 (0,156 vs 0,134), pero
-    # LogisticRegression detecta 58 impagos frente a 38. En crédito el costo
-    # de un falso negativo —el capital prestado— supera al de un falso
-    # positivo —la ganancia del crédito no otorgado—, por lo que se prioriza
-    # recall sobre F1.
+    # El RandomForest ajustado alcanza mejor F1, pero LogisticRegression
+    # detecta más impagos. En crédito el costo de un falso negativo —el
+    # capital prestado— supera al de un falso positivo —la ganancia del
+    # crédito no otorgado—, por lo que se prioriza recall sobre F1.
+    # Los valores concretos figuran en la tabla impresa arriba.
     MODELO_FINAL = "LogisticRegression"
     pipe_mejor = pipelines[MODELO_FINAL]
 

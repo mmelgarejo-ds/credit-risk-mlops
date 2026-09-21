@@ -75,7 +75,7 @@ Es el comportamiento esperable tras eliminar las fugas.
 |---|---|---|---|---|
 | **LogisticRegression** | 0,076 | **0,569** | 0,134 | **0,691** |
 | RandomForest | 1,000 | 0,039 | 0,076 | 0,661 |
-| XGBoost | 0,600 | 0,029 | 0,056 | 0,627 |
+| XGBoost | 1,000 | 0,029 | 0,057 | 0,656 |
 | RandomForest ajustado | 0,099 | 0,373 | **0,156** | 0,681 |
 
 Métricas sobre la clase 0 (impago), en el conjunto de prueba.
