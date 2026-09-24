@@ -111,3 +111,39 @@ def test_ingresos_de_datacredito_son_opcionales(cliente):
     respuesta = cliente.post("/predecir", json=sin_dato)
     assert respuesta.status_code == 200
     assert 0.0 <= respuesta.json()["probabilidad_impago"] <= 1.0
+
+# --- Predicción por lotes -------------------------------------------------
+
+def test_batch_devuelve_un_resultado_por_solicitud(cliente):
+    lote = {"solicitudes": [SOLICITUD, SOLICITUD, SOLICITUD]}
+    respuesta = cliente.post("/predecir_batch", json=lote)
+    assert respuesta.status_code == 200
+    assert len(respuesta.json()["resultados"]) == 3
+
+
+def test_batch_cada_resultado_tiene_los_tres_campos(cliente):
+    lote = {"solicitudes": [SOLICITUD]}
+    resultado = cliente.post("/predecir_batch", json=lote).json()["resultados"][0]
+    assert set(resultado) == {"probabilidad_impago", "clasificacion", "riesgo_alto"}
+
+
+def test_batch_coincide_con_prediccion_individual(cliente):
+    """Evaluar una solicitud sola o dentro de un lote de una debe dar el
+    mismo resultado: confirma que calcular_derivados() se aplica igual en
+    ambos endpoints.
+    """
+    individual = cliente.post("/predecir", json=SOLICITUD).json()
+    lote = cliente.post("/predecir_batch", json={"solicitudes": [SOLICITUD]})
+    del_lote = lote.json()["resultados"][0]
+    assert individual["probabilidad_impago"] == del_lote["probabilidad_impago"]
+
+
+def test_batch_rechaza_solicitud_invalida_en_el_lote(cliente):
+    invalida = {**SOLICITUD, "edad_cliente": 150}
+    lote = {"solicitudes": [SOLICITUD, invalida]}
+    assert cliente.post("/predecir_batch", json=lote).status_code == 422
+
+
+def test_batch_con_lista_vacia_se_rechaza(cliente):
+    respuesta = cliente.post("/predecir_batch", json={"solicitudes": []})
+    assert respuesta.status_code == 422

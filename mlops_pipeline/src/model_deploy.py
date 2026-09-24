@@ -175,7 +175,10 @@ def predecir_batch(lote: SolicitudBatch):
             status_code=503,
             detail="Modelo no disponible. Ejecutar model_training_evaluation.py"
         )
-
+    if not lote.solicitudes:
+        raise HTTPException(status_code=422,
+                            detail="La lista de solicitudes no puede estar vacía")
+    
     filas = [calcular_derivados(s.model_dump()) for s in lote.solicitudes]
     df = pd.DataFrame(filas)
 
