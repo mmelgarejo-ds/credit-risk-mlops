@@ -21,14 +21,44 @@ SEMILLA = 42
 #   > 0,25  drift significativo, evaluar reentrenamiento
 UMBRAL_KS = 0.25
 UMBRAL_P = 0.05
+UMBRAL_PSI = 0.25
 
+def calcular_psi(ref, act, columna, bins=10):
+    """Population Stability Index: mide cuánto cambió la distribución de una
+    variable entre dos períodos, dividiéndola en bins y comparando qué
+    proporción de cada muestra cae en cada uno.
+
+    Umbrales estándar en la industria:
+        < 0,10        sin cambio relevante
+        0,10 - 0,25   cambio moderado
+        > 0,25        cambio significativo
+    """
+    a = ref[columna].dropna()
+    b = act[columna].dropna()
+
+    # Los puntos de corte se definen sobre la referencia, no sobre el actual:
+    # el PSI mide qué tanto se aparta "act" de la distribución "normal".
+    cortes = np.percentile(a, np.linspace(0, 100, bins + 1))
+    cortes[0], cortes[-1] = -np.inf, np.inf
+    cortes = np.unique(cortes)  # evita bins vacíos si hay muchos valores repetidos
+
+    prop_ref = pd.cut(a, bins=cortes).value_counts(normalize=True, sort=False)
+    prop_act = pd.cut(b, bins=cortes).value_counts(normalize=True, sort=False)
+
+    # Evita log(0): un bin sin observaciones se reemplaza por un valor mínimo
+    prop_ref = prop_ref.replace(0, 0.0001)
+    prop_act = prop_act.replace(0, 0.0001)
+
+    return float(((prop_act - prop_ref) * np.log(prop_act / prop_ref)).sum())
 
 def detectar_drift_numerico(ref, act, columnas):
-    """Aplica el test de Kolmogorov-Smirnov a cada variable numérica.
+    """Aplica KS y PSI a cada variable numérica.
 
-    KS compara las distribuciones acumuladas de ambas muestras y devuelve la
-    distancia máxima entre ellas. No asume normalidad, lo que es necesario
-    aquí: varias variables presentan asimetría superior a 20.
+    KS compara las distribuciones acumuladas y no asume normalidad, necesario
+    aquí porque varias variables presentan asimetría superior a 20. PSI es el
+    estándar de la industria para monitoreo de scorecards y complementa a KS:
+    dos métricas independientes reducen el riesgo de que un falso positivo de
+    una se tome como drift real.
     """
     filas = []
     for col in columnas:
@@ -38,11 +68,14 @@ def detectar_drift_numerico(ref, act, columnas):
             continue
 
         estadistico, p_valor = ks_2samp(a, b)
+        psi = calcular_psi(ref, act, col)
+
         filas.append({
             "variable": col,
             "ks": round(estadistico, 4),
             "p_valor": round(p_valor, 6),
-            "drift": estadistico > UMBRAL_KS or p_valor < UMBRAL_P
+            "psi": round(psi, 4),
+            "drift": estadistico > UMBRAL_KS or psi > UMBRAL_PSI
         })
 
     return pd.DataFrame(filas).sort_values("ks", ascending=False)
