@@ -119,16 +119,22 @@ chi-cuadrado (categóricas), con dos particiones:
 | Partición | Variables con drift |
 |---|---|
 | Aleatoria (control) | 1 de 25 |
-| Cronológica | 16 de 25 |
+| Cronológica | 4 de 25 |
 
-El control valida el método: con 25 pruebas al 5% de significancia, 1 o 2
-positivos son atribuibles al azar. El contraste confirma que el drift temporal
-es real.
+El control valida el método: con 25 pruebas, 1 positivo es atribuible al azar.
+El contraste confirma que el drift temporal detectado en la partición
+cronológica es real.
 
-El estadístico KS más alto es 0,218 (`plazo_meses`), por debajo del umbral de
-0,25 que indicaría reentrenamiento. Las 16 variables se marcan por p-valor: con
-5.381 registros por grupo, la prueba detecta diferencias mínimas.
-**Significativo no equivale a relevante.**
+El criterio de drift combina Kolmogorov-Smirnov (KS > 0,25) y Population
+Stability Index (PSI > 0,25), en lugar de basarse en el p-valor: con 5.381
+registros por grupo, el p-valor detecta diferencias mínimas sin magnitud real
+—**significativo no equivale a relevante**—, mientras que KS y PSI miden el
+tamaño del cambio.
+
+Las dos variables con drift son `plazo_meses` (KS 0,218, PSI 0,348) y
+`promedio_ingresos_datacredito` (KS 0,185, PSI 0,387). En `plazo_meses`, PSI
+detecta un cambio que KS por poco no alcanza a marcar, lo que justifica usar
+ambas métricas en conjunto.
 
 ---
 

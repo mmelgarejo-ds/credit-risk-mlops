@@ -9,6 +9,7 @@ distribución cambia, sin que el sistema emita ningún error.
 
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from scipy.stats import ks_2samp, chi2_contingency
 
 from ft_engineering import cargar_datos, limpiar_datos, crear_atributos
@@ -21,14 +22,44 @@ SEMILLA = 42
 #   > 0,25  drift significativo, evaluar reentrenamiento
 UMBRAL_KS = 0.25
 UMBRAL_P = 0.05
+UMBRAL_PSI = 0.25
 
+def calcular_psi(ref, act, columna, bins=10):
+    """Population Stability Index: mide cuánto cambió la distribución de una
+    variable entre dos períodos, dividiéndola en bins y comparando qué
+    proporción de cada muestra cae en cada uno.
+
+    Umbrales estándar en la industria:
+        < 0,10        sin cambio relevante
+        0,10 - 0,25   cambio moderado
+        > 0,25        cambio significativo
+    """
+    a = ref[columna].dropna()
+    b = act[columna].dropna()
+
+    # Los puntos de corte se definen sobre la referencia, no sobre el actual:
+    # el PSI mide qué tanto se aparta "act" de la distribución "normal".
+    cortes = np.percentile(a, np.linspace(0, 100, bins + 1))
+    cortes[0], cortes[-1] = -np.inf, np.inf
+    cortes = np.unique(cortes)  # evita bins vacíos si hay muchos valores repetidos
+
+    prop_ref = pd.cut(a, bins=cortes).value_counts(normalize=True, sort=False)
+    prop_act = pd.cut(b, bins=cortes).value_counts(normalize=True, sort=False)
+
+    # Evita log(0): un bin sin observaciones se reemplaza por un valor mínimo
+    prop_ref = prop_ref.replace(0, 0.0001)
+    prop_act = prop_act.replace(0, 0.0001)
+
+    return float(((prop_act - prop_ref) * np.log(prop_act / prop_ref)).sum())
 
 def detectar_drift_numerico(ref, act, columnas):
-    """Aplica el test de Kolmogorov-Smirnov a cada variable numérica.
+    """Aplica KS y PSI a cada variable numérica.
 
-    KS compara las distribuciones acumuladas de ambas muestras y devuelve la
-    distancia máxima entre ellas. No asume normalidad, lo que es necesario
-    aquí: varias variables presentan asimetría superior a 20.
+    KS compara las distribuciones acumuladas y no asume normalidad, necesario
+    aquí porque varias variables presentan asimetría superior a 20. PSI es el
+    estándar de la industria para monitoreo de scorecards y complementa a KS:
+    dos métricas independientes reducen el riesgo de que un falso positivo de
+    una se tome como drift real.
     """
     filas = []
     for col in columnas:
@@ -38,11 +69,14 @@ def detectar_drift_numerico(ref, act, columnas):
             continue
 
         estadistico, p_valor = ks_2samp(a, b)
+        psi = calcular_psi(ref, act, col)
+
         filas.append({
             "variable": col,
             "ks": round(estadistico, 4),
             "p_valor": round(p_valor, 6),
-            "drift": estadistico > UMBRAL_KS or p_valor < UMBRAL_P
+            "psi": round(psi, 4),
+            "drift": estadistico > UMBRAL_KS or psi > UMBRAL_PSI
         })
 
     return pd.DataFrame(filas).sort_values("ks", ascending=False)
@@ -105,6 +139,56 @@ def experimento_temporal(df, columnas_num, columnas_cat):
     return (detectar_drift_numerico(ref, act, columnas_num),
             detectar_drift_categorico(ref, act, columnas_cat))
 
+def guardar_reporte(num_temp, cat_temp, drift_ctrl, drift_temp, total):
+    """Persiste el resultado de la corrida para que otros sistemas o
+    procesos puedan consultarlo sin depender de que el dashboard esté
+    abierto.
+    """
+    import json
+    from datetime import datetime, timezone
+
+    carpeta = Path(__file__).resolve().parents[2] / "reports"
+    carpeta.mkdir(exist_ok=True)
+
+    ahora = datetime.now(timezone.utc).isoformat()
+
+    if drift_temp == 0:
+        nivel = "sin_drift"
+    elif drift_temp / total <= 0.15:
+        nivel = "moderado"
+    else:
+        nivel = "critico"
+
+    reporte = {
+        "fecha_ejecucion": ahora,
+        "nivel_alerta": nivel,
+        "variables_con_drift": int(drift_temp),
+        "total_variables": int(total),
+        "control_variables_con_drift": int(drift_ctrl),
+        "detalle_numericas": num_temp.to_dict(orient="records"),
+        "detalle_categoricas": cat_temp.to_dict(orient="records"),
+    }
+
+    # Reporte de la corrida más reciente: pensado para que lo lea otro
+    # sistema o proceso automatizado.
+    with open(carpeta / "drift_report.json", "w", encoding="utf-8") as f:
+        json.dump(reporte, f, indent=2, ensure_ascii=False)
+
+    # Historial acumulado: permite auditar la evolución sin depender de
+    # que el dashboard esté abierto.
+    fila_historial = pd.DataFrame([{
+        "fecha_ejecucion": ahora,
+        "nivel_alerta": nivel,
+        "variables_con_drift": drift_temp,
+        "total_variables": total,
+    }])
+    ruta_historial = carpeta / "drift_history.csv"
+    fila_historial.to_csv(
+        ruta_historial, mode="a", header=not ruta_historial.exists(), index=False
+    )
+
+    return carpeta
+
 if __name__ == "__main__":
     df = crear_atributos(limpiar_datos(cargar_datos()))
 
@@ -141,7 +225,10 @@ if __name__ == "__main__":
     print("\n=== Resumen ===")
     print(f"Partición aleatoria:   {drift_ctrl}/{total} variables con drift")
     print(f"Partición cronológica: {drift_temp}/{total} variables con drift")
-
+    
+    carpeta = guardar_reporte(num_temp, cat_temp, drift_ctrl, drift_temp, total)
+    print(f"\nReporte guardado en {carpeta}/")
+    
     if drift_temp > drift_ctrl:
         print("\nEl contraste indica drift temporal real: la partición aleatoria")
         print("sirve como control y descarta que el resultado sea un artefacto")
