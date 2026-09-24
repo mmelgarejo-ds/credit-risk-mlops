@@ -136,6 +136,13 @@ Las dos variables con drift son `plazo_meses` (KS 0,218, PSI 0,348) y
 detecta un cambio que KS por poco no alcanza a marcar, lo que justifica usar
 ambas métricas en conjunto.
 
+El dashboard de Streamlit incluye un indicador de nivel de alerta (sin drift,
+moderado, crítico) y un gráfico que compara la distribución histórica contra
+la actual para la variable que se elija. Cada corrida de `model_monitoring.py`
+persiste su resultado en `reports/drift_report.json` y acumula un historial en
+`reports/drift_history.csv`, para poder auditar la evolución sin depender de
+que el dashboard esté abierto.
+
 ---
 
 ## Estructura
@@ -183,11 +190,12 @@ uvicorn model_deploy:app --reload
 
 Documentación interactiva en http://localhost:8000/docs
 
-| Endpoint | Método | Descripción |
-|---|---|---|
-| `/` | GET | Información del servicio |
-| `/health` | GET | Verificación de disponibilidad |
-| `/predecir` | POST | Evaluación de una solicitud |
+| Endpoint          | Método | Descripción                       |
+|-------------------|--------|------------------------------------|
+| `/`               | GET    | Información del servicio          |
+| `/health`         | GET    | Verificación de disponibilidad    |
+| `/predecir`       | POST   | Evaluación de una solicitud       |
+| `/predecir_batch` | POST   | Evaluación de varias solicitudes a la vez |
 
 La validación de entrada se realiza con Pydantic sobre las mismas reglas
 definidas en el EDA: edad entre 18 y 90, salario superior a 100.000, puntaje
