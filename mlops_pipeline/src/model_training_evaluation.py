@@ -3,6 +3,9 @@ Entrenamiento y evaluación de modelos para el riesgo crediticio.
 
 Entrena varios clasificadores, los evalúa con métricas apropiadas para un
 dataset desbalanceado (4,75% de impago) y selecciona el de mejor desempeño.
+
+Cobertura de tests ampliada: calcular_metricas, construir_modelos y
+optimizar_umbral se validan con datos simulados.
 """
 
 import numpy as np
