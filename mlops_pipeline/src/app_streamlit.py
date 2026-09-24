@@ -12,6 +12,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import streamlit as st
+import matplotlib.pyplot as plt
 from pathlib import Path
 
 from ft_engineering import (cargar_datos, limpiar_datos, crear_atributos,
@@ -163,7 +164,8 @@ with tab_drift:
         "drift, el problema estaría en el método y no en los datos."
     )
 
-    from model_monitoring import (experimento_control, experimento_temporal)
+    from model_monitoring import (experimento_control, experimento_temporal,
+                                  calcular_psi)
 
     columnas_cat = ["tipo_laboral", "tendencia_ingresos"]
     excluidas = ["Pago_atiempo", "mes_prestamo", "trimestre_prestamo"]
@@ -174,14 +176,30 @@ with tab_drift:
         with st.spinner("Calculando..."):
             num_ctrl, cat_ctrl = experimento_control(df, columnas_num, columnas_cat)
             num_temp, cat_temp = experimento_temporal(df, columnas_num, columnas_cat)
+        # Se guarda en el estado de sesión para que el gráfico de más abajo
+        # pueda usar los mismos resultados sin recalcular al interactuar.
+        st.session_state["drift_resultado"] = (num_ctrl, cat_ctrl, num_temp, cat_temp)
 
+    if "drift_resultado" in st.session_state:
+        num_ctrl, cat_ctrl, num_temp, cat_temp = st.session_state["drift_resultado"]
         total = len(num_ctrl) + len(cat_ctrl)
         drift_ctrl = int(num_ctrl["drift"].sum() + cat_ctrl["drift"].sum())
         drift_temp = int(num_temp["drift"].sum() + cat_temp["drift"].sum())
 
-        c1, c2 = st.columns(2)
+        c1, c2, c3 = st.columns(3)
         c1.metric("Partición aleatoria (control)", f"{drift_ctrl} / {total}")
         c2.metric("Partición cronológica", f"{drift_temp} / {total}")
+
+        # Semáforo según la proporción de variables con drift en la
+        # partición temporal, que es la que importa para producción.
+        proporcion = drift_temp / total if total else 0
+        if proporcion == 0:
+            semaforo, texto = "🟢", "Sin drift"
+        elif proporcion <= 0.15:
+            semaforo, texto = "🟡", "Drift moderado"
+        else:
+            semaforo, texto = "🔴", "Drift relevante"
+        c3.metric("Estado", f"{semaforo} {texto}")
 
         if drift_temp > drift_ctrl:
             st.warning(
@@ -190,8 +208,36 @@ with tab_drift:
                 "del método de detección."
             )
 
-        st.write("**Variables ordenadas por estadístico KS (partición temporal)**")
+        st.write("**Variables numéricas — KS y PSI (partición temporal)**")
         st.dataframe(num_temp, use_container_width=True)
 
         st.write("**Variables categóricas (chi-cuadrado)**")
         st.dataframe(cat_temp, use_container_width=True)
+
+        # --- Comparación visual de distribuciones ---
+        st.divider()
+        st.write("**Comparar distribución: referencia vs. actual**")
+
+        variable_elegida = st.selectbox(
+            "Variable", num_temp["variable"].tolist())
+
+        fecha = pd.to_datetime(df["fecha_prestamo"])
+        ordenado = df.assign(fecha=fecha).sort_values("fecha")
+        mitad = len(ordenado) // 2
+        ref = ordenado.iloc[:mitad][variable_elegida].dropna()
+        act = ordenado.iloc[mitad:][variable_elegida].dropna()
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.hist(ref, bins=30, alpha=0.6, label="Referencia (antiguos)",
+                color="#4c72b0", density=True)
+        ax.hist(act, bins=30, alpha=0.6, label="Actual (recientes)",
+                color="#c44e52", density=True)
+        ax.set_title(f"Distribución de {variable_elegida}")
+        ax.legend()
+        st.pyplot(fig)
+
+        fila = num_temp[num_temp["variable"] == variable_elegida].iloc[0]
+        st.caption(
+            f"KS = {fila['ks']:.4f} · PSI = {fila['psi']:.4f} · "
+            f"{'con drift' if fila['drift'] else 'sin drift detectado'}"
+        )

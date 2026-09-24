@@ -142,3 +142,63 @@ def predecir(solicitud: Solicitud):
         clasificacion="riesgo alto" if prediccion == 0 else "riesgo bajo",
         riesgo_alto=(prediccion == 0)
     )
+class SolicitudBatch(BaseModel):
+    """Varias solicitudes evaluadas en una sola petición."""
+    solicitudes: list[Solicitud]
+
+
+class RespuestaBatch(BaseModel):
+    resultados: list[Respuesta]
+
+
+@app.post("/predecir_batch", response_model=RespuestaBatch)
+def predecir_batch(lote: SolicitudBatch):
+    """Evalúa varias solicitudes de una vez.
+
+    Reutiliza la misma lógica de predecir() para cada registro, en lugar de
+    invocar el modelo fila por fila: el pipeline procesa el DataFrame
+    completo en una sola pasada.
+
+    Responses:
+        503: el modelo no está cargado.
+    """
+    if modelo is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Modelo no disponible. Ejecutar model_training_evaluation.py"
+        )
+
+    filas = []
+    for solicitud in lote.solicitudes:
+        datos = solicitud.model_dump()
+        sin_dc = datos["promedio_ingresos_datacredito"] is None
+        datos["sin_datos_datacredito"] = int(sin_dc)
+        if sin_dc:
+            datos["promedio_ingresos_datacredito"] = float("nan")
+        datos["sin_otros_prestamos"] = int(datos["total_otros_prestamos"] == 0)
+        datos["sin_saldo"] = int(datos["saldo_total"] == 0)
+        datos["ratio_cuota_salario"] = datos["cuota_pactada"] / datos["salario_cliente"]
+        datos["ratio_capital_salario"] = datos["capital_prestado"] / datos["salario_cliente"]
+        datos["ratio_deuda_salario"] = datos["total_otros_prestamos"] / datos["salario_cliente"]
+        datos["saldo_no_capital"] = datos["saldo_total"] - datos["saldo_principal"]
+        filas.append(datos)
+
+    df = pd.DataFrame(filas)
+
+    try:
+        probabilidades = modelo.predict_proba(df)[:, 0]
+        predicciones = modelo.predict(df)
+    except Exception as e:
+        raise HTTPException(status_code=500,
+                            detail=f"Error al procesar el lote: {e}")
+
+    resultados = [
+        Respuesta(
+            probabilidad_impago=round(float(p), 4),
+            clasificacion="riesgo alto" if pred == 0 else "riesgo bajo",
+            riesgo_alto=(pred == 0)
+        )
+        for p, pred in zip(probabilidades, predicciones)
+    ]
+
+    return RespuestaBatch(resultados=resultados)
