@@ -138,7 +138,7 @@ if __name__ == "__main__":
     print(cat_temp.to_string(index=False))
 
     # --- Conclusión ---
-    print(f"\n=== Resumen ===")
+    print("\n=== Resumen ===")
     print(f"Partición aleatoria:   {drift_ctrl}/{total} variables con drift")
     print(f"Partición cronológica: {drift_temp}/{total} variables con drift")
 
