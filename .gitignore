@@ -21,3 +21,7 @@ Thumbs.db
 # Editor
 .vscode/
 Base_de_datos.xlsx
+
+# Reportes de cobertura, se generan en cada corrida
+.coverage
+coverage.xml
