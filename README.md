@@ -71,12 +71,12 @@ Es el comportamiento esperable tras eliminar las fugas.
 
 ## Resultados
 
-| Modelo | Precision | Recall | F1 | ROC-AUC |
-|---|---|---|---|---|
-| **LogisticRegression** | 0,076 | **0,569** | 0,134 | **0,691** |
-| RandomForest | 1,000 | 0,039 | 0,076 | 0,661 |
-| XGBoost | 1,000 | 0,029 | 0,057 | 0,656 |
-| RandomForest ajustado | 0,099 | 0,373 | **0,156** | 0,681 |
+| Modelo                 | Precision | Recall    | F1        | ROC-AUC   |
+| ----------------------- | --------- | --------- | --------- | --------- |
+| **LogisticRegression** | 0,076     | **0,569** | 0,134     | **0,691** |
+| RandomForest           | 1,000     | 0,039     | 0,076     | 0,661     |
+| XGBoost                | 1,000     | 0,029     | 0,057     | 0,656     |
+| RandomForest ajustado  | 0,099     | 0,373     | **0,156** | 0,681     |
 
 Métricas sobre la clase 0 (impago), en el conjunto de prueba.
 
@@ -92,19 +92,19 @@ priorizó recall sobre F1.
 
 Matriz de confusión del modelo elegido:
 
-|  | Pred: impago | Pred: pago |
-|---|---|---|
-| **Real: impago** | 58 | 44 |
-| **Real: pago** | 704 | 1.347 |
+|                  | Pred: impago | Pred: pago |
+| ---------------- | ------------ | ---------- |
+| **Real: impago** | 58           | 44         |
+| **Real: pago**   | 704          | 1.347      |
 
 ### El umbral es ajustable
 
-| Umbral | Detectados | Escapados | Falsas alarmas |
-|---|---|---|---|
-| 0,40 | 88 | 14 | 1.180 |
-| 0,45 | 74 | 28 | 931 |
-| **0,50** (actual) | **58** | **44** | **704** |
-| 0,60 | 38 | 64 | 326 |
+| Umbral            | Detectados | Escapados | Falsas alarmas |
+| ----------------- | ---------- | --------- | --------------- |
+| 0,40              | 88         | 14        | 1.180           |
+| 0,45              | 74         | 28        | 931             |
+| **0,50** (actual) | **58**     | **44**    | **704**         |
+| 0,60              | 38         | 64        | 326             |
 
 El máximo F1 se alcanza en 0,60, pero bajar el umbral detecta más impagos. La
 elección final depende del costo relativo asignado a cada tipo de error.
@@ -116,10 +116,10 @@ elección final depende del costo relativo asignado a cada tipo de error.
 Comparación de distribuciones mediante Kolmogorov-Smirnov (numéricas) y
 chi-cuadrado (categóricas), con dos particiones:
 
-| Partición | Variables con drift |
-|---|---|
-| Aleatoria (control) | 1 de 25 |
-| Cronológica | 4 de 25 |
+| Partición            | Variables con drift |
+| -------------------- | -------------------- |
+| Aleatoria (control)  | 1 de 25              |
+| Cronológica          | 4 de 25              |
 
 El control valida el método: con 25 pruebas, 1 positivo es atribuible al azar.
 El contraste confirma que el drift temporal detectado en la partición
@@ -136,27 +136,33 @@ Las dos variables con drift son `plazo_meses` (KS 0,218, PSI 0,348) y
 detecta un cambio que KS por poco no alcanza a marcar, lo que justifica usar
 ambas métricas en conjunto.
 
-El dashboard de Streamlit incluye un indicador de nivel de alerta (sin drift,
-moderado, crítico) y un gráfico que compara la distribución histórica contra
-la actual para la variable que se elija. Cada corrida de `model_monitoring.py`
-persiste su resultado en `reports/drift_report.json` y acumula un historial en
-`reports/drift_history.csv`, para poder auditar la evolución sin depender de
-que el dashboard esté abierto.
+El dashboard de Streamlit (pestaña "Monitoreo de drift") ejecuta ambos
+experimentos bajo demanda y muestra tres cosas: un indicador de nivel de
+alerta (🟢 sin drift, 🟡 moderado, 🔴 relevante, según qué proporción de
+variables supera el umbral en la partición temporal), la tabla completa con
+KS y PSI por variable, y un gráfico que superpone los histogramas de
+referencia y actual para la variable que se elija —útil para ver visualmente
+la magnitud del cambio en `plazo_meses` o `promedio_ingresos_datacredito`.
+
+Cada corrida de `model_monitoring.py` persiste su resultado en
+`reports/drift_report.json` (snapshot completo con el detalle por variable) y
+agrega una fila a `reports/drift_history.csv` (fecha, nivel de alerta,
+variables con drift), lo que permite auditar la evolución del modelo en
+producción sin depender de que el dashboard esté abierto en ese momento.
 
 ---
 
 ## Estructura
 
-```
 mlops_pipeline/src/
-├── Cargar_datos.ipynb              ingesta del Excel y exportación a CSV
-├── comprension_eda.ipynb           exploración, limpieza y EDA
-├── ft_engineering.py               pipeline de preparación de datos
-├── model_training_evaluation.py    entrenamiento y selección
-├── model_monitoring.py             detección de drift
-├── model_deploy.py                 API (avance 4)
-└── app_streamlit.py                interfaz de usuario
-```
+├── Cargar_datos.ipynb ingesta del Excel y exportación a CSV
+├── comprension_eda.ipynb exploración, limpieza y EDA
+├── ft_engineering.py pipeline de preparación de datos
+├── model_training_evaluation.py entrenamiento y selección
+├── model_monitoring.py detección de drift
+├── model_deploy.py API (avance 4)
+└── app_streamlit.py interfaz de usuario
+
 
 ---
 
@@ -188,14 +194,14 @@ cd mlops_pipeline/src
 uvicorn model_deploy:app --reload
 ```
 
-Documentación interactiva en http://localhost:8000/docs
+Documentación interactiva en <http://localhost:8000/docs>
 
-| Endpoint          | Método | Descripción                       |
-|-------------------|--------|------------------------------------|
-| `/`               | GET    | Información del servicio          |
-| `/health`         | GET    | Verificación de disponibilidad    |
-| `/predecir`       | POST   | Evaluación de una solicitud       |
-| `/predecir_batch` | POST   | Evaluación de varias solicitudes a la vez |
+| Endpoint          | Método | Descripción                                |
+| ------------------ | ------ | ------------------------------------------- |
+| `/`                | GET    | Información del servicio                   |
+| `/health`          | GET    | Verificación de disponibilidad             |
+| `/predecir`        | POST   | Evaluación de una solicitud                |
+| `/predecir_batch`  | POST   | Evaluación de varias solicitudes a la vez  |
 
 La validación de entrada se realiza con Pydantic sobre las mismas reglas
 definidas en el EDA: edad entre 18 y 90, salario superior a 100.000, puntaje
@@ -216,6 +222,32 @@ localmente.
 
 `modelo_final.pkl` debe existir antes de construir la imagen: se genera con
 `model_training_evaluation.py`.
+
+### Testing y calidad de código
+
+```bash
+pytest                                      # corre la suite completa
+pytest --cov=mlops_pipeline/src --cov-report=term-missing
+```
+
+43 tests cubren las cuatro piezas del pipeline:
+
+| Archivo probado                  | Qué se verifica |
+| --------------------------------- | ---------------- |
+| `ft_engineering.py`               | reglas de validación, atributos derivados, que el preprocesador no deje nulos y que `fit`/`transform` respeten train/test |
+| `model_deploy.py`                 | los cuatro endpoints, validación de Pydantic, que `/predecir` y `/predecir_batch` den el mismo resultado para la misma solicitud |
+| `model_monitoring.py`             | que PSI dé 0 ante distribuciones iguales y detecte un cambio de media real; que las columnas con pocos datos se excluyan sin error |
+| `model_training_evaluation.py`    | cálculo de métricas, balanceo de clases según los datos recibidos, comportamiento de `optimizar_umbral` con un modelo simulado |
+
+El análisis de calidad corre automáticamente en cada push mediante GitHub
+Actions y SonarCloud: [ver el proyecto en SonarCloud](https://sonarcloud.io/project/overview?id=mmelgarejo-ds_credit-risk-mlops).
+El estado general del código (Overall Code) está en A en seguridad,
+confiabilidad y mantenibilidad, con 0% de duplicación. El Quality Gate para
+"código nuevo" exige 80% de cobertura sobre las líneas modificadas
+recientemente, un criterio pensado para proyectos con historial largo de
+commits incrementales; en un repositorio entregado de una vez, ese umbral no
+se alcanza pese a que la cobertura global del proyecto es de 45%.
+
 ---
 
 ## Decisiones y limitaciones
@@ -234,10 +266,12 @@ enero de 2025 a 11 en abril de 2026. Se evaluaron dos hipótesis —maduración 
 la cartera y corte en la extracción— y ninguna es compatible con los datos. Se
 documenta el patrón sin atribuirle causa.
 
-**Los atributos derivados se calculan en dos lugares:** en `ft_engineering.py`
-para el entrenamiento y en `app_streamlit.py` para las solicitudes
-individuales. Es un riesgo de *feature drift* que convendría resolver
-centralizando el cálculo.
+**Los atributos derivados se calculaban originalmente en tres lugares**
+(`ft_engineering.py`, `predecir` y `predecir_batch` en `model_deploy.py`),
+con riesgo de *feature drift* si alguna copia quedaba desactualizada. Se
+centralizó el cálculo de la API en `calcular_derivados()`, usada por ambos
+endpoints. `app_streamlit.py` conserva su propia copia para el formulario
+interactivo, pendiente de unificar.
 
 **Herramientas aplicadas fuera del temario del módulo:** pruebas de
 chi-cuadrado, binomial y Mann-Whitney para validar diferencias observadas, y
