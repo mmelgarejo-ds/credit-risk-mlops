@@ -86,6 +86,9 @@ def estado():
 
     Los orquestadores de contenedores consultan este endpoint para saber si
     la instancia está en condiciones de recibir tráfico.
+
+    Responses:
+        503: el modelo no está cargado.
     """
     if modelo is None:
         raise HTTPException(status_code=503,
@@ -95,7 +98,12 @@ def estado():
 
 @app.post("/predecir", response_model=Respuesta)
 def predecir(solicitud: Solicitud):
-    """Evalúa una solicitud y devuelve la probabilidad de impago."""
+    """Evalúa una solicitud y devuelve la probabilidad de impago.
+
+    Responses:
+        503: el modelo no está cargado (no se ejecutó el entrenamiento).
+        500: error al procesar los datos de la solicitud.
+    """
     if modelo is None:
         raise HTTPException(
             status_code=503,
