@@ -1,0 +1,184 @@
+{
+  "fecha_ejecucion": "2026-09-24T01:36:04.282179+00:00",
+  "nivel_alerta": "critico",
+  "variables_con_drift": 4,
+  "total_variables": 25,
+  "control_variables_con_drift": 1,
+  "detalle_numericas": [
+    {
+      "variable": "plazo_meses",
+      "ks": 0.2179,
+      "p_valor": 0.0,
+      "psi": 0.3479,
+      "drift": true
+    },
+    {
+      "variable": "promedio_ingresos_datacredito",
+      "ks": 0.1854,
+      "p_valor": 0.0,
+      "psi": 0.3871,
+      "drift": true
+    },
+    {
+      "variable": "tipo_credito",
+      "ks": 0.1159,
+      "p_valor": 0.0,
+      "psi": 0.068,
+      "drift": false
+    },
+    {
+      "variable": "cuota_pactada",
+      "ks": 0.0984,
+      "p_valor": 0.0,
+      "psi": 0.0511,
+      "drift": false
+    },
+    {
+      "variable": "total_otros_prestamos",
+      "ks": 0.0715,
+      "p_valor": 0.0,
+      "psi": 0.0741,
+      "drift": false
+    },
+    {
+      "variable": "ratio_deuda_salario",
+      "ks": 0.0707,
+      "p_valor": 0.0,
+      "psi": 0.0833,
+      "drift": false
+    },
+    {
+      "variable": "ratio_capital_salario",
+      "ks": 0.0659,
+      "p_valor": 0.0,
+      "psi": 0.0269,
+      "drift": false
+    },
+    {
+      "variable": "salario_cliente",
+      "ks": 0.0594,
+      "p_valor": 0.0,
+      "psi": 0.0361,
+      "drift": false
+    },
+    {
+      "variable": "saldo_principal",
+      "ks": 0.049,
+      "p_valor": 8e-06,
+      "psi": 0.0102,
+      "drift": false
+    },
+    {
+      "variable": "ratio_cuota_salario",
+      "ks": 0.0481,
+      "p_valor": 8e-06,
+      "psi": 0.0205,
+      "drift": false
+    },
+    {
+      "variable": "saldo_total",
+      "ks": 0.0471,
+      "p_valor": 1.5e-05,
+      "psi": 0.0108,
+      "drift": false
+    },
+    {
+      "variable": "capital_prestado",
+      "ks": 0.0419,
+      "p_valor": 0.000145,
+      "psi": 0.0242,
+      "drift": false
+    },
+    {
+      "variable": "huella_consulta",
+      "ks": 0.0393,
+      "p_valor": 0.000473,
+      "psi": 0.0092,
+      "drift": false
+    },
+    {
+      "variable": "sin_otros_prestamos",
+      "ks": 0.0307,
+      "p_valor": 0.012316,
+      "psi": 0.0248,
+      "drift": false
+    },
+    {
+      "variable": "saldo_no_capital",
+      "ks": 0.0216,
+      "p_valor": 0.173003,
+      "psi": 0.0079,
+      "drift": false
+    },
+    {
+      "variable": "cant_creditosvigentes",
+      "ks": 0.0209,
+      "p_valor": 0.184279,
+      "psi": 0.0052,
+      "drift": false
+    },
+    {
+      "variable": "creditos_sectorReal",
+      "ks": 0.0172,
+      "p_valor": 0.399506,
+      "psi": 0.0033,
+      "drift": false
+    },
+    {
+      "variable": "creditos_sectorFinanciero",
+      "ks": 0.0161,
+      "p_valor": 0.478831,
+      "psi": 0.0031,
+      "drift": false
+    },
+    {
+      "variable": "puntaje_datacredito",
+      "ks": 0.0159,
+      "p_valor": 0.506339,
+      "psi": 0.0018,
+      "drift": false
+    },
+    {
+      "variable": "edad_cliente",
+      "ks": 0.0149,
+      "p_valor": 0.590479,
+      "psi": 0.0046,
+      "drift": false
+    },
+    {
+      "variable": "creditos_sectorCooperativo",
+      "ks": 0.0132,
+      "p_valor": 0.730897,
+      "psi": 0.0021,
+      "drift": false
+    },
+    {
+      "variable": "sin_saldo",
+      "ks": 0.008,
+      "p_valor": 0.994587,
+      "psi": 0.0009,
+      "drift": false
+    },
+    {
+      "variable": "sin_datos_datacredito",
+      "ks": 0.0007,
+      "p_valor": 1.0,
+      "psi": 0.0,
+      "drift": false
+    }
+  ],
+  "detalle_categoricas": [
+    {
+      "variable": "tipo_laboral",
+      "chi2": 26.794,
+      "p_valor": 0.0,
+      "drift": true
+    },
+    {
+      "variable": "tendencia_ingresos",
+      "chi2": 136.1982,
+      "p_valor": 0.0,
+      "drift": true
+    }
+  ]
+}

@@ -9,6 +9,7 @@ distribución cambia, sin que el sistema emita ningún error.
 
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from scipy.stats import ks_2samp, chi2_contingency
 
 from ft_engineering import cargar_datos, limpiar_datos, crear_atributos
@@ -138,6 +139,56 @@ def experimento_temporal(df, columnas_num, columnas_cat):
     return (detectar_drift_numerico(ref, act, columnas_num),
             detectar_drift_categorico(ref, act, columnas_cat))
 
+def guardar_reporte(num_temp, cat_temp, drift_ctrl, drift_temp, total):
+    """Persiste el resultado de la corrida para que otros sistemas o
+    procesos puedan consultarlo sin depender de que el dashboard esté
+    abierto.
+    """
+    import json
+    from datetime import datetime, timezone
+
+    carpeta = Path(__file__).resolve().parents[2] / "reports"
+    carpeta.mkdir(exist_ok=True)
+
+    ahora = datetime.now(timezone.utc).isoformat()
+
+    if drift_temp == 0:
+        nivel = "sin_drift"
+    elif drift_temp / total <= 0.15:
+        nivel = "moderado"
+    else:
+        nivel = "critico"
+
+    reporte = {
+        "fecha_ejecucion": ahora,
+        "nivel_alerta": nivel,
+        "variables_con_drift": int(drift_temp),
+        "total_variables": int(total),
+        "control_variables_con_drift": int(drift_ctrl),
+        "detalle_numericas": num_temp.to_dict(orient="records"),
+        "detalle_categoricas": cat_temp.to_dict(orient="records"),
+    }
+
+    # Reporte de la corrida más reciente: pensado para que lo lea otro
+    # sistema o proceso automatizado.
+    with open(carpeta / "drift_report.json", "w", encoding="utf-8") as f:
+        json.dump(reporte, f, indent=2, ensure_ascii=False)
+
+    # Historial acumulado: permite auditar la evolución sin depender de
+    # que el dashboard esté abierto.
+    fila_historial = pd.DataFrame([{
+        "fecha_ejecucion": ahora,
+        "nivel_alerta": nivel,
+        "variables_con_drift": drift_temp,
+        "total_variables": total,
+    }])
+    ruta_historial = carpeta / "drift_history.csv"
+    fila_historial.to_csv(
+        ruta_historial, mode="a", header=not ruta_historial.exists(), index=False
+    )
+
+    return carpeta
+
 if __name__ == "__main__":
     df = crear_atributos(limpiar_datos(cargar_datos()))
 
@@ -174,7 +225,10 @@ if __name__ == "__main__":
     print("\n=== Resumen ===")
     print(f"Partición aleatoria:   {drift_ctrl}/{total} variables con drift")
     print(f"Partición cronológica: {drift_temp}/{total} variables con drift")
-
+    
+    carpeta = guardar_reporte(num_temp, cat_temp, drift_ctrl, drift_temp, total)
+    print(f"\nReporte guardado en {carpeta}/")
+    
     if drift_temp > drift_ctrl:
         print("\nEl contraste indica drift temporal real: la partición aleatoria")
         print("sirve como control y descarta que el resultado sea un artefacto")
