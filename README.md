@@ -5,6 +5,38 @@ Proyecto Integrador del Módulo 5 (MLOps y Deployment) — Soy Henry.
 Modelo de clasificación que estima la probabilidad de que una solicitud de
 crédito no sea pagada a tiempo, desplegado como pipeline reproducible.
 
+> **Nota:** este es un ejercicio académico de modelado y MLOps (Proyecto
+> Integrador de Soy Henry), no un sistema validado para decisiones crediticias
+> reales. El dataset, el desbalance de clases y las métricas resultantes son
+> los de este ejercicio puntual — no representan el desempeño que tendría un
+> modelo de riesgo crediticio en producción sobre datos de otra financiera.
+
+---
+
+<p align="center"><img src="figures/dashboard_evaluacion.png" alt="Dashboard Streamlit — evaluación de una solicitud" width="90%"></p>
+<p align="center"><sub>Dashboard Streamlit, pestaña "Evaluar solicitud" — captura real de una corrida local del modelo entrenado.</sub></p>
+
+## Resumen ejecutivo
+
+- **El modelo detecta 58 de 102 impagos en el set de prueba (recall 0,569)**,
+  a costa de generar muchas falsas alarmas: de cada 13 solicitudes marcadas
+  como riesgosas, solo 1 realmente lo era (precision 0,076). Es una elección
+  deliberada — en crédito, dejar pasar un impago (capital perdido) cuesta más
+  que rechazar por error una solicitud sana — pero significa que, tal como
+  está, el modelo no sirve para decidir solo, sino para priorizar qué
+  solicitudes revisar con más atención.
+- **Se detectaron y eliminaron dos fugas de información** antes de entrenar:
+  una variable (`puntaje`) que separaba perfectamente las clases por estar
+  calculada con información posterior al resultado, y las variables de mora
+  (`saldo_mora`), que no existen al momento de evaluar una solicitud nueva.
+  Sin esa limpieza, el modelo hubiera mostrado métricas casi perfectas sin
+  capacidad real de generalizar.
+- **El pipeline queda reproducible y monitoreado**: API con FastAPI y
+  validación de entrada, contenedor Docker, 43 tests automatizados, CI con
+  SonarCloud (A en seguridad/confiabilidad/mantenibilidad), y monitoreo de
+  drift con dos métricas (KS y PSI) que confirmaron un cambio temporal real
+  en 2 de 25 variables.
+
 ---
 
 ## El problema
@@ -144,6 +176,9 @@ KS y PSI por variable, y un gráfico que superpone los histogramas de
 referencia y actual para la variable que se elija —útil para ver visualmente
 la magnitud del cambio en `plazo_meses` o `promedio_ingresos_datacredito`.
 
+<p align="center"><img src="figures/dashboard_drift.png" alt="Dashboard Streamlit — monitoreo de drift" width="90%"></p>
+<p align="center"><sub>Dashboard Streamlit, pestaña "Monitoreo de drift" — captura real tras ejecutar el análisis sobre el dataset del repositorio.</sub></p>
+
 Cada corrida de `model_monitoring.py` persiste su resultado en
 `reports/drift_report.json` (snapshot completo con el detalle por variable) y
 agrega una fila a `reports/drift_history.csv` (fecha, nivel de alerta,
@@ -186,6 +221,14 @@ streamlit run app_streamlit.py
 
 `modelo_final.pkl` no se versiona (está en `.gitignore`). Se genera al ejecutar
 el entrenamiento, que es requisito previo para la aplicación.
+
+**Instrucciones verificadas desde cero:** los tres pasos de arriba (`pip
+install`, `ft_engineering.py`, `model_training_evaluation.py` y
+`model_monitoring.py`) se corrieron en un entorno virtual recién creado,
+sin nada preinstalado más que `requirements.txt`. Las métricas resultantes
+coinciden con las reportadas en este README (recall 0,5686, precision
+0,0761, matriz de confusión 58/44/704/1.347; drift en 4 de 25 variables en
+la partición cronológica frente a 1 de 25 en la de control).
 
 ### API de inferencia
 
