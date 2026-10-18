@@ -157,17 +157,20 @@ El control valida el método: con 25 pruebas, 1 positivo es atribuible al azar.
 El contraste confirma que el drift temporal detectado en la partición
 cronológica es real.
 
-El criterio de drift para variables **numéricas** combina Kolmogorov-Smirnov
-(KS > 0,25) y Population Stability Index (PSI > 0,25), en lugar de basarse en
-el p-valor: con 5.381 registros por grupo, el p-valor detecta diferencias
+El criterio de drift para variables **numéricas** marca una variable como
+"con drift" si **KS > 0,25 o PSI > 0,25** (alcanza con que una de las dos
+supere el umbral, no hace falta que las dos lo hagan), en lugar de basarse
+en el p-valor: con 5.381 registros por grupo, el p-valor detecta diferencias
 mínimas sin magnitud real —**significativo no equivale a relevante**—,
 mientras que KS y PSI miden el tamaño del cambio. Las 4 variables con drift
 en la partición cronológica se reparten así:
 
-- **2 numéricas** (criterio KS/PSI): `plazo_meses` (KS 0,218, PSI 0,348) y
-  `promedio_ingresos_datacredito` (KS 0,185, PSI 0,387). En `plazo_meses`, PSI
-  detecta un cambio que KS por poco no alcanza a marcar, lo que justifica
-  usar ambas métricas en conjunto.
+- **2 numéricas** (criterio KS/PSI, unión no intersección): `plazo_meses`
+  (KS 0,218, PSI 0,348) y `promedio_ingresos_datacredito` (KS 0,185, PSI
+  0,387). En los dos casos KS queda por debajo de 0,25 y es PSI el que
+  dispara el flag — si el criterio exigiera que ambas métricas superen el
+  umbral (intersección), ninguna de las dos se habría marcado como drift.
+  Usar KS y PSI como unión, no como intersección, es lo que las detecta.
 - **2 categóricas** (criterio chi-cuadrado, p-valor): `tipo_laboral` (chi²
   26,79, p < 0,001) y `tendencia_ingresos` (chi² 136,20, p < 0,001).
 
