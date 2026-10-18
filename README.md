@@ -34,8 +34,8 @@ crédito no sea pagada a tiempo, desplegado como pipeline reproducible.
 - **El pipeline queda reproducible y monitoreado**: API con FastAPI y
   validación de entrada, contenedor Docker, 43 tests automatizados, CI con
   SonarCloud (A en seguridad/confiabilidad/mantenibilidad), y monitoreo de
-  drift con dos métricas (KS y PSI) que confirmaron un cambio temporal real
-  en 2 de 25 variables.
+  drift (KS/PSI para numéricas, chi-cuadrado para categóricas) que confirmó
+  un cambio temporal real en 4 de 25 variables (2 numéricas, 2 categóricas).
 
 ---
 
