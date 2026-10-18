@@ -157,16 +157,27 @@ El control valida el método: con 25 pruebas, 1 positivo es atribuible al azar.
 El contraste confirma que el drift temporal detectado en la partición
 cronológica es real.
 
-El criterio de drift combina Kolmogorov-Smirnov (KS > 0,25) y Population
-Stability Index (PSI > 0,25), en lugar de basarse en el p-valor: con 5.381
-registros por grupo, el p-valor detecta diferencias mínimas sin magnitud real
-—**significativo no equivale a relevante**—, mientras que KS y PSI miden el
-tamaño del cambio.
+El criterio de drift para variables **numéricas** combina Kolmogorov-Smirnov
+(KS > 0,25) y Population Stability Index (PSI > 0,25), en lugar de basarse en
+el p-valor: con 5.381 registros por grupo, el p-valor detecta diferencias
+mínimas sin magnitud real —**significativo no equivale a relevante**—,
+mientras que KS y PSI miden el tamaño del cambio. Las 4 variables con drift
+en la partición cronológica se reparten así:
 
-Las dos variables con drift son `plazo_meses` (KS 0,218, PSI 0,348) y
-`promedio_ingresos_datacredito` (KS 0,185, PSI 0,387). En `plazo_meses`, PSI
-detecta un cambio que KS por poco no alcanza a marcar, lo que justifica usar
-ambas métricas en conjunto.
+- **2 numéricas** (criterio KS/PSI): `plazo_meses` (KS 0,218, PSI 0,348) y
+  `promedio_ingresos_datacredito` (KS 0,185, PSI 0,387). En `plazo_meses`, PSI
+  detecta un cambio que KS por poco no alcanza a marcar, lo que justifica
+  usar ambas métricas en conjunto.
+- **2 categóricas** (criterio chi-cuadrado, p-valor): `tipo_laboral` (chi²
+  26,79, p < 0,001) y `tendencia_ingresos` (chi² 136,20, p < 0,001).
+
+**Limitación reconocida:** el criterio categórico todavía se apoya en el
+p-valor puro, el mismo problema que el criterio numérico evita a propósito
+con KS/PSI — con 5.381 registros por grupo, un chi-cuadrado también puede
+marcar como "con drift" una diferencia estadísticamente significativa pero
+de magnitud chica. Para las categóricas falta una métrica de tamaño de
+efecto equivalente a PSI (p. ej. Cramér's V); queda como mejora pendiente
+del pipeline de monitoreo.
 
 El dashboard de Streamlit (pestaña "Monitoreo de drift") ejecuta ambos
 experimentos bajo demanda y muestra tres cosas: un indicador de nivel de
