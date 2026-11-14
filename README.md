@@ -1,14 +1,12 @@
 # Modelo de riesgo crediticio
 
-Proyecto Integrador del Módulo 5 (MLOps y Deployment) — Soy Henry.
-
 Modelo de clasificación que estima la probabilidad de que una solicitud de
 crédito no sea pagada a tiempo, desplegado como pipeline reproducible.
 
-> **Nota:** este es un ejercicio académico de modelado y MLOps (Proyecto
-> Integrador de Soy Henry), no un sistema validado para decisiones crediticias
-> reales. El dataset, el desbalance de clases y las métricas resultantes son
-> los de este ejercicio puntual — no representan el desempeño que tendría un
+> **Nota:** proyecto desarrollado durante la carrera de Data Science de Henry
+> (2026) sobre un dataset de práctica; no es un sistema validado para
+> decisiones crediticias reales. El dataset, el desbalance de clases y las
+> métricas resultantes son los de este caso puntual — no representan el desempeño que tendría un
 > modelo de riesgo crediticio en producción sobre datos de otra financiera.
 
 ---
@@ -209,7 +207,7 @@ mlops_pipeline/src/
 ├── ft_engineering.py pipeline de preparación de datos
 ├── model_training_evaluation.py entrenamiento y selección
 ├── model_monitoring.py detección de drift
-├── model_deploy.py API (avance 4)
+├── model_deploy.py API de inferencia (FastAPI)
 └── app_streamlit.py interfaz de usuario
 
 
@@ -302,7 +300,7 @@ El estado general del código (Overall Code) está en A en seguridad,
 confiabilidad y mantenibilidad, con 0% de duplicación. El Quality Gate para
 "código nuevo" exige 80% de cobertura sobre las líneas modificadas
 recientemente, un criterio pensado para proyectos con historial largo de
-commits incrementales; en un repositorio entregado de una vez, ese umbral no
+commits incrementales; en un repositorio publicado de una sola vez, ese umbral no
 se alcanza pese a que la cobertura global del proyecto es de 45%.
 
 ---
@@ -330,7 +328,7 @@ centralizó el cálculo de la API en `calcular_derivados()`, usada por ambos
 endpoints. `app_streamlit.py` conserva su propia copia para el formulario
 interactivo, pendiente de unificar.
 
-**Herramientas aplicadas fuera del temario del módulo:** pruebas de
+**Validación estadística adicional:** pruebas de
 chi-cuadrado, binomial y Mann-Whitney para validar diferencias observadas, y
 transformación logarítmica sobre las variables de monto (reduce el sesgo de
 `capital_prestado` de 3,72 a 0,11).
