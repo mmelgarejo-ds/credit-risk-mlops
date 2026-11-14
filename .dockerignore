@@ -10,7 +10,6 @@ __pycache__/
 .git/
 .gitignore
 .vscode/
-.claude/
 
 # Notebooks y datos no necesarios en tiempo de ejecución
 *.ipynb
